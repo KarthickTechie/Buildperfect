@@ -1,3 +1,9 @@
+/*
+    @author     : karthick.d    02/10/2025
+    @desc       : Reusable wiget that draws header and botton border 
+                  required params - panelWidth and title string 
+                  panelwidth is passed from parent widget
+*/
 import 'package:flutter/material.dart';
 
 class PanelHeader extends StatelessWidget {

@@ -5,6 +5,7 @@ part of 'bpwidget_props_bloc.dart';
 class BpwidgetPropsState extends Equatable {
   final BpwidgetProps bpwidgetProps;
   final SaveStatus? saveStatus;
+
   const BpwidgetPropsState(this.saveStatus, {required this.bpwidgetProps});
 
   @override
@@ -24,7 +25,11 @@ class BpwidgetPropsState extends Equatable {
   }
 
   factory BpwidgetPropsState.init() => BpwidgetPropsState(
-    bpwidgetProps: BpwidgetProps(label: '', controlName: '', controlType: ''),
+    bpwidgetProps: BpwidgetProps(
+      label: 'label1',
+      controlName: 'page1_',
+      controlType: 'textbox',
+    ),
     SaveStatus.init,
   );
 }

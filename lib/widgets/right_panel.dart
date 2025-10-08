@@ -12,6 +12,7 @@
                 [FormControlDataSource] - wraps all controls for control's DS
 */
 import 'package:dashboard/bloc/bpwidgetprops/bpwidget_props_bloc.dart';
+import 'package:dashboard/bloc/bpwidgetprops/model/bpwidget_props.dart';
 import 'package:dashboard/types/ui_controls_types.dart';
 import 'package:dashboard/widgets/page_props_button_segment.dart';
 import 'package:dashboard/widgets/rightpanels/actions_panel.dart';
@@ -25,7 +26,13 @@ class RightPanel extends StatefulWidget {
   /// based on that loan propspanel , actionpanel and datapanel widget
   final double width;
   final double height;
-  const RightPanel({super.key, required this.width, required this.height});
+  final BpwidgetProps? props;
+  const RightPanel({
+    super.key,
+    required this.width,
+    required this.height,
+    required this.props,
+  });
 
   @override
   State<RightPanel> createState() => _RightPanelState();
@@ -38,6 +45,11 @@ class _RightPanelState extends State<RightPanel> {
   Set<PagePropsSegmentButton> selectedSegmentButton = {
     PagePropsSegmentButton.property,
   };
+
+  @override
+  void initState() {
+    super.initState();
+  }
 
   void _segementButtonChangedListener(
     Set<PagePropsSegmentButton> selectedSegment,
@@ -52,6 +64,7 @@ class _RightPanelState extends State<RightPanel> {
       PagePropsSegmentButton.property => PropsPanel(
         width: panelWidth,
         height: panelHeight,
+        props: widget.props,
       ),
       PagePropsSegmentButton.action => ActionsPanel(
         width: panelWidth,
