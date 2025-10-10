@@ -11,6 +11,7 @@ import 'package:dashboard/bloc/bpwidgetprops/model/bpwidget_props.dart';
 import 'package:dashboard/bloc/bpwidgets/model/bpwidget.dart';
 import 'package:dashboard/types/drag_drop_types.dart';
 import 'package:dashboard/widgets/containers/dragged_holder.dart';
+import 'package:dashboard/widgets/currency_field.dart';
 import 'package:dashboard/widgets/my_draggable_widget.dart';
 import 'package:dotted_border/dotted_border.dart';
 import 'package:flutter/material.dart';
@@ -233,6 +234,41 @@ class _ItemsPanelState extends State<ItemPanel> {
         children: [ElevatedButton(onPressed: () {}, child: Text('Save'))],
       ),
       PlaceholderWidgets.Label => Text('label ${index + 1}'),
+      PlaceholderWidgets.Currency => DraggedHolder(
+        onTapDraggedControl: () {
+          selectedIndex = index;
+
+          BpwidgetProps bpWidgetPropsObj = getWidgetProps(
+            widget.items[selectedIndex].widgetType,
+          );
+          widget.onItemClicked!(bpWidgetPropsObj);
+          setState(() {});
+        },
+        labelText:
+            props.label.isEmpty ? 'label ${index + 1}' : props.controlName,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            border:
+                selectedIndex == index
+                    ? Border.all(width: 2, color: Colors.teal)
+                    : Border.all(width: 2, color: Colors.transparent),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              SizedBox(
+                width: 300,
+                child: CurrencyField(enabled: false, hintText: 'Enter Amount'),
+              ),
+
+              selectedIndex == index
+                  ? GlobalStyles.selectedIcon
+                  : GlobalStyles.fillerSizedBox50,
+            ],
+          ),
+        ),
+      ),
     };
   }
 
@@ -251,6 +287,7 @@ class _ItemsPanelState extends State<ItemPanel> {
       ),
       PlaceholderWidgets.Button => Icon(Icons.touch_app, color: Colors.white),
       PlaceholderWidgets.Label => Icon(Icons.label, color: Colors.white),
+      PlaceholderWidgets.Currency => Icon(Icons.label, color: Colors.white),
     };
   }
 
@@ -327,16 +364,56 @@ class _ItemsPanelState extends State<ItemPanel> {
                   ),
                 ),
               );
-              return Draggable(
-                feedback: child,
-                child: MyDraggableWidget(
-                  data: e.value.widgetType.name,
-                  onDragStart: () => widget.onDragStart((e.key, widget.panel)),
-                  child: child,
-                ),
+              // return Draggable(
+              //   feedback: child,
+              return MyDraggableWidget(
+                data: e.value.widgetType.name,
+                onDragStart: () => widget.onDragStart((e.key, widget.panel)),
+                child: child,
               );
+              // );
             }).toList(),
       );
     }
+  }
+
+  BpwidgetProps getWidgetProps(PlaceholderWidgets wdg) {
+    return switch (wdg) {
+      PlaceholderWidgets.Textfield => BpwidgetProps(
+        label: 'label ${selectedIndex + 1}',
+        controlName: 'page1_',
+        controlType: 'Textbox',
+      ),
+      PlaceholderWidgets.Dropdown => BpwidgetProps(
+        label: 'label ${selectedIndex + 1}',
+        controlName: 'page1_',
+        controlType: 'Dropdown',
+      ),
+      PlaceholderWidgets.Checkbox => BpwidgetProps(
+        label: 'label ${selectedIndex + 1}',
+        controlName: 'page1_',
+        controlType: 'Checkbox',
+      ),
+      PlaceholderWidgets.Radio => BpwidgetProps(
+        label: 'label ${selectedIndex + 1}',
+        controlName: 'page1_',
+        controlType: 'Radio',
+      ),
+      PlaceholderWidgets.Button => BpwidgetProps(
+        label: 'label ${selectedIndex + 1}',
+        controlName: 'page1_',
+        controlType: 'Button',
+      ),
+      PlaceholderWidgets.Label => BpwidgetProps(
+        label: 'label ${selectedIndex + 1}',
+        controlName: 'page1_',
+        controlType: 'Textfield',
+      ),
+      PlaceholderWidgets.Currency => BpwidgetProps(
+        label: 'label ${selectedIndex + 1}',
+        controlName: 'page1_',
+        controlType: 'Textfield',
+      ),
+    };
   }
 }

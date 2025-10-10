@@ -36,6 +36,15 @@ class _SplitPanelState extends State<SplitPanel> {
   /// BPWidgets
   final bpController = BPPageController.loadNPages(5);
   List<BPWidget> upper = [];
+  final List<PlaceholderWidgets> _lower = [
+    PlaceholderWidgets.Textfield,
+    PlaceholderWidgets.Dropdown,
+    PlaceholderWidgets.Checkbox,
+    PlaceholderWidgets.Radio,
+    PlaceholderWidgets.Button,
+    PlaceholderWidgets.Label,
+  ];
+
   final List<BPWidget> lower = [
     BPWidget(
       bpwidgetProps: BpwidgetProps(
@@ -84,6 +93,14 @@ class _SplitPanelState extends State<SplitPanel> {
         controlType: PlaceholderWidgets.Label.name,
       ),
       widgetType: PlaceholderWidgets.Label,
+    ),
+    BPWidget(
+      bpwidgetProps: BpwidgetProps(
+        label: '',
+        controlName: '',
+        controlType: PlaceholderWidgets.Currency.name,
+      ),
+      widgetType: PlaceholderWidgets.Currency,
     ),
   ];
 
