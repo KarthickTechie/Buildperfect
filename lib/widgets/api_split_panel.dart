@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dashboard/bloc/apiBuilder/apibuilder_props_bloc.dart';
 import 'package:dashboard/bloc/apiBuilder/apibuilder_props_event.dart';
 import 'package:dashboard/bloc/apiBuilder/apibuilder_props_state.dart';
@@ -7,6 +9,7 @@ import 'package:dashboard/widgets/customcontrols/key_value_reactive_textbox.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_forms/reactive_forms.dart';
+import 'package:http/http.dart' as http;
 
 class MyWidget extends StatelessWidget {
   const MyWidget({super.key});
@@ -30,6 +33,7 @@ class SplitPanel extends StatefulWidget {
 }
 
 class _SplitPanelState extends State<SplitPanel> {
+  String? _apiResponse;
   final form = FormGroup({
     'apiName': FormControl<String>(validators: [Validators.required]),
     'apiEndpoint': FormControl<String>(validators: [Validators.required]),
@@ -134,6 +138,59 @@ class _SplitPanelState extends State<SplitPanel> {
   // ====== DELETE API ======
   void _deleteApi(int index) {
     context.read<ApiBloc>().add(DeleteApi(index));
+  }
+
+  // ===========TEST API =========
+  Future<void> _testApi() async {
+    if (!form.valid) {
+      form.markAllAsTouched();
+      return;
+    }
+
+    final url = form.control('apiEndpoint').value;
+    final method = form.control('httpMethod').value;
+    final headersArray = form.control('headers') as FormArray;
+    final requestArray = form.control('requestKey') as FormArray;
+
+    // Prepare headers
+    Map<String, String> headers = {
+      for (var h in headersArray.controls)
+        if ((h as FormGroup).control('key').value != null &&
+            (h).control('value').value != null)
+          h.control('key').value: h.control('value').value,
+    };
+
+    // Prepare body (request keys)
+    Map<String, dynamic> body = {
+      for (var r in requestArray.controls)
+        if ((r as FormGroup).control('key').value != null)
+          r.control('key').value: r.control('value').value ?? "",
+    };
+
+    try {
+      http.Response response;
+
+      if (method == 'GET') {
+        // Add query params for GET
+        final uri = Uri.parse(url).replace(queryParameters: body);
+        response = await http.get(uri, headers: headers);
+      } else {
+        response = await http.post(
+          Uri.parse(url),
+          headers: headers,
+          body: jsonEncode(body),
+        );
+      }
+
+      String responseText = response.body;
+      setState(() {
+        _apiResponse = response.body;
+      });
+      print('responseText------------------>$response');
+      print('responseText------------------>$responseText');
+    } catch (error) {
+      print(error);
+    }
   }
 
   @override
@@ -261,9 +318,9 @@ class _SplitPanelState extends State<SplitPanel> {
               child: Row(
                 children: [
                   ElevatedButton(
-                    onPressed: () {},
+                    onPressed: _testApi,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
+                      backgroundColor: Colors.red,
                     ),
                     child: const Text(
                       "Test API",
@@ -350,6 +407,24 @@ class _SplitPanelState extends State<SplitPanel> {
                 style: const TextStyle(fontFamily: 'monospace'),
               ),
             ),
+            Text(
+              "Response Object:",
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.green,
+              ),
+            ),
+            if (_apiResponse != null) ...[
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(8),
+                color: Colors.white,
+                child: Text(
+                  _apiResponse!,
+                  style: const TextStyle(fontFamily: 'monospace'),
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -475,6 +550,11 @@ class _SplitPanelState extends State<SplitPanel> {
                   labeltext: 'Request Key',
                   width: 500,
                 ),
+                KeyValueReactiveTextbox(
+                  formControlName: 'value',
+                  labeltext: 'Request Key',
+                  width: 500,
+                ),
                 const SizedBox(height: 8),
                 ElevatedButton.icon(
                   onPressed: () {
@@ -486,7 +566,10 @@ class _SplitPanelState extends State<SplitPanel> {
                           'key': FormControl<String>(
                             value: requestEntryForm.control('key').value,
                           ),
-                          'value': FormControl<String>(value: ""),
+                          // 'value': FormControl<String>(value: ""),
+                          'value': FormControl<String>(
+                            value: requestEntryForm.control('value').value,
+                          ),
                         }),
                       );
                       requestEntryForm.reset();
