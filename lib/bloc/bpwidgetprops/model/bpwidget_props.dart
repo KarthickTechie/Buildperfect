@@ -18,31 +18,34 @@ class BpwidgetProps {
   final String label;
   final String controlName;
   final String controlType;
-  final bool isRequired;
-  final int? max;
-  final int? min;
-  final bool isVerificationRequired;
-  final List<ValidationPattern>? validationPatterns;
+  final String isRequired;
+  final String? max;
+  final String? min;
+  final String isVerificationRequired;
+  final String? validationPatterns;
+  final String? id;
   BpwidgetProps({
     required this.label,
     required this.controlName,
     required this.controlType,
-    this.isRequired = false,
+    this.isRequired = "false",
     this.max,
     this.min,
-    this.isVerificationRequired = false,
+    this.isVerificationRequired = "false",
     this.validationPatterns,
+    this.id,
   });
 
   BpwidgetProps copyWith({
     String? label,
     String? controlName,
     String? controlType,
-    bool? isRequired,
-    int? max,
-    int? min,
-    bool? isVerificationRequired,
-    List<ValidationPattern>? validationPatterns,
+    String? isRequired,
+    String? max,
+    String? min,
+    String? isVerificationRequired,
+    String? validationPatterns,
+    String? id,
   }) {
     return BpwidgetProps(
       label: label ?? this.label,
@@ -54,6 +57,7 @@ class BpwidgetProps {
       isVerificationRequired:
           isVerificationRequired ?? this.isVerificationRequired,
       validationPatterns: validationPatterns ?? this.validationPatterns,
+      id: id ?? this.id,
     );
   }
 
@@ -66,7 +70,8 @@ class BpwidgetProps {
       'max': max,
       'min': min,
       'isVerificationRequired': isVerificationRequired,
-      'validationPatterns': validationPatterns!.map((x) => x.name).toList(),
+      'validationPatterns': validationPatterns,
+      'id': id,
     };
   }
 
@@ -75,16 +80,15 @@ class BpwidgetProps {
       label: map['label'] as String,
       controlName: map['controlName'] as String,
       controlType: map['controlType'] as String,
-      isRequired: map['isRequired'] as bool,
-      max: map['max'] != null ? map['max'] as int : null,
-      min: map['min'] != null ? map['min'] as int : null,
-      isVerificationRequired: map['isVerificationRequired'] as bool,
+      isRequired: map['isRequired'] as String,
+      max: map['max'] != null ? map['max'] as String : null,
+      min: map['min'] != null ? map['min'] as String : null,
+      isVerificationRequired: map['isVerificationRequired'] as String,
       validationPatterns:
           map['validationPatterns'] != null
-              ? List<ValidationPattern>.from(
-                (map['validationPatterns'] as List<ValidationPattern>),
-              )
+              ? map['validationPatterns'] as String
               : null,
+      id: map['id'] != null ? map['id'] as String : null,
     );
   }
 
@@ -95,7 +99,7 @@ class BpwidgetProps {
 
   @override
   String toString() {
-    return 'BpwidgetProps(label: $label, controlName: $controlName, controlType: $controlType, isRequired: $isRequired, max: $max, min: $min, isVerificationRequired: $isVerificationRequired, validationPatterns: $validationPatterns)';
+    return 'BpwidgetProps(label: $label, controlName: $controlName, controlType: $controlType, isRequired: $isRequired, max: $max, min: $min, isVerificationRequired: $isVerificationRequired, validationPatterns: $validationPatterns, id: $id)';
   }
 
   @override
@@ -109,7 +113,8 @@ class BpwidgetProps {
         other.max == max &&
         other.min == min &&
         other.isVerificationRequired == isVerificationRequired &&
-        listEquals(other.validationPatterns, validationPatterns);
+        other.validationPatterns == validationPatterns &&
+        other.id == id;
   }
 
   @override
@@ -121,6 +126,7 @@ class BpwidgetProps {
         max.hashCode ^
         min.hashCode ^
         isVerificationRequired.hashCode ^
-        validationPatterns.hashCode;
+        validationPatterns.hashCode ^
+        id.hashCode;
   }
 }

@@ -5,10 +5,17 @@ class BpwidgetForms {
     'label': FormControl<String>(),
     'controlName': FormControl<String>(),
     'controlType': FormControl<String>(),
-    'isRequired': FormControl<bool>(),
+    'isRequired': FormControl<String>(),
     'min': FormControl<String>(),
     'max': FormControl<String>(),
-    'isVerificationRequired': FormControl<bool>(),
+    'isVerificationRequired': FormControl<String>(),
     'validationPatterns': FormControl<String>(),
+  });
+
+  /// reactive formgroup object for actions form in actionspanel
+  static FormGroup get_bpwidgetaction_forms() => FormGroup({
+    'event': FormControl<String>(),
+    'action': FormControl<String>(),
+    'pageurl': FormControl<String>(),
   });
 }

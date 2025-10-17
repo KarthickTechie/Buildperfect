@@ -26,7 +26,7 @@ class BpwidgetPropsState extends Equatable {
 
   factory BpwidgetPropsState.init() => BpwidgetPropsState(
     bpwidgetProps: BpwidgetProps(
-      label: 'label1',
+      label: '',
       controlName: 'page1_',
       controlType: 'textbox',
     ),

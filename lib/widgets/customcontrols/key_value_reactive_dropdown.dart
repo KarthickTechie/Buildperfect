@@ -11,7 +11,7 @@ import 'package:reactive_forms/reactive_forms.dart';
 class KeyValueReactiveDropdown extends StatefulWidget {
   final double width;
   final String labeltext;
-  final List<String> dropdownEntries;
+  final List<dynamic> dropdownEntries;
   final dynamic initialSelection;
   final ValueChanged? onSelected;
   final String formControlName;

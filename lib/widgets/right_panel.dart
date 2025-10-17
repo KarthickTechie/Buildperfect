@@ -13,6 +13,7 @@
 */
 import 'package:dashboard/bloc/bpwidgetprops/bpwidget_props_bloc.dart';
 import 'package:dashboard/bloc/bpwidgetprops/model/bpwidget_props.dart';
+import 'package:dashboard/bloc/bpwidgets/model/bpwidget.dart';
 import 'package:dashboard/types/ui_controls_types.dart';
 import 'package:dashboard/widgets/page_props_button_segment.dart';
 import 'package:dashboard/widgets/rightpanels/actions_panel.dart';
@@ -26,7 +27,7 @@ class RightPanel extends StatefulWidget {
   /// based on that loan propspanel , actionpanel and datapanel widget
   final double width;
   final double height;
-  final BpwidgetProps? props;
+  final BPWidget? props;
   const RightPanel({
     super.key,
     required this.width,
@@ -69,6 +70,7 @@ class _RightPanelState extends State<RightPanel> {
       PagePropsSegmentButton.action => ActionsPanel(
         width: panelWidth,
         height: panelHeight,
+        bpWidget: widget.props,
       ),
       PagePropsSegmentButton.datasource => DatasourcePanel(
         width: panelWidth,
@@ -79,20 +81,15 @@ class _RightPanelState extends State<RightPanel> {
 
   @override
   Widget build(BuildContext context) {
-    return MultiBlocProvider(
-      providers: [
-        BlocProvider(create: (context) => BpwidgetPropsBloc(), lazy: false),
-      ],
-      child: Padding(
-        padding: const EdgeInsets.all(8),
-        child: Column(
-          children: [
-            PagePropsButtonSegment(
-              onSegmentChanged: _segementButtonChangedListener,
-            ),
-            renderPanelsBasedOnSegment(),
-          ],
-        ),
+    return Padding(
+      padding: const EdgeInsets.all(8),
+      child: Column(
+        children: [
+          PagePropsButtonSegment(
+            onSegmentChanged: _segementButtonChangedListener,
+          ),
+          renderPanelsBasedOnSegment(),
+        ],
       ),
     );
   }
