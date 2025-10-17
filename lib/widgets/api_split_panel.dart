@@ -1,14 +1,22 @@
+import 'package:dashboard/bloc/apiBuilder/apibuilder_props_bloc.dart';
+import 'package:dashboard/bloc/apiBuilder/apibuilder_props_event.dart';
+import 'package:dashboard/bloc/apiBuilder/apibuilder_props_state.dart';
+import 'package:dashboard/bloc/apiBuilder/model/apibuilder_props.dart';
 import 'package:dashboard/widgets/customcontrols/key_value_reactive_dropdown.dart';
 import 'package:dashboard/widgets/customcontrols/key_value_reactive_textbox.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
 class MyWidget extends StatelessWidget {
   const MyWidget({super.key});
 
   @override
+  @override
   Widget build(BuildContext context) {
-    return const MaterialApp(home: SplitPanel());
+    return MaterialApp(
+      home: BlocProvider(create: (_) => ApiBloc(), child: const SplitPanel()),
+    );
   }
 }
 
@@ -22,8 +30,6 @@ class SplitPanel extends StatefulWidget {
 }
 
 class _SplitPanelState extends State<SplitPanel> {
-  List<Map<String, dynamic>> createdApis = [];
-
   final form = FormGroup({
     'apiName': FormControl<String>(validators: [Validators.required]),
     'apiEndpoint': FormControl<String>(validators: [Validators.required]),
@@ -45,13 +51,38 @@ class _SplitPanelState extends State<SplitPanel> {
 
   String searchQuery = "";
 
+  // ====== SAVE API ======
   void _saveApi() {
     if (form.valid) {
-      final json = form.value;
-      setState(() {
-        createdApis.add(Map<String, dynamic>.from(json));
-      });
-      debugPrint("Saved API JSON: $json");
+      final headersArray = form.control('headers') as FormArray;
+      final requestArray = form.control('requestKey') as FormArray;
+
+      final api = ApiModel(
+        apiName: form.control('apiName').value,
+        apiEndpoint: form.control('apiEndpoint').value,
+        apiMethodName: form.control('apiMethodName').value ?? '',
+        httpMethod: form.control('httpMethod').value,
+        headers:
+            headersArray.controls
+                .map(
+                  (c) => Header(
+                    key: c.value['key'] ?? '',
+                    value: c.value['value'] ?? '',
+                  ),
+                )
+                .toList(),
+        requestKeys:
+            requestArray.controls
+                .map(
+                  (c) => RequestKey(
+                    key: c.value['key'] ?? '',
+                    value: c.value['value'] ?? '',
+                  ),
+                )
+                .toList(),
+      );
+
+      context.read<ApiBloc>().add(AddApi(api));
 
       form.reset();
       (form.control('headers') as FormArray).clear();
@@ -63,92 +94,106 @@ class _SplitPanelState extends State<SplitPanel> {
     }
   }
 
+  // ====== EDIT API ======
   void _editApi(int index) {
-    final api = createdApis[index];
+    final api = context.read<ApiBloc>().state.apis[index];
 
     form.reset();
     form.patchValue({
-      'apiName': api['apiName'],
-      'apiEndpoint': api['apiEndpoint'],
-      'apiMethodName': api['apiMethodName'],
-      'httpMethod': api['httpMethod'],
+      'apiName': api.apiName,
+      'apiEndpoint': api.apiEndpoint,
+      'apiMethodName': api.apiMethodName,
+      'httpMethod': api.httpMethod,
     });
 
     final headersArray = form.control('headers') as FormArray;
-    headersArray.clear();
-    if (api['headers'] != null) {
-      for (var h in api['headers']) {
-        headersArray.add(FormGroup({
-          'key': FormControl<String>(value: h['key']),
-          'value': FormControl<String>(value: h['value']),
-        }));
-      }
-    }
-
     final requestArray = form.control('requestKey') as FormArray;
-    requestArray.clear();
-    if (api['requestKey'] != null) {
-      for (var r in api['requestKey']) {
-        requestArray.add(FormGroup({
-          'key': FormControl<String>(value: r['key']),
-          'value': FormControl<String>(value: r['value']),
-        }));
+    setState(() {
+      headersArray.clear();
+      for (var h in api.headers) {
+        headersArray.add(
+          FormGroup({
+            'key': FormControl<String>(value: h.key),
+            'value': FormControl<String>(value: h.value),
+          }),
+        );
       }
-    }
-    setState(() {});
+
+      requestArray.clear();
+      for (var r in api.requestKeys) {
+        requestArray.add(
+          FormGroup({
+            'key': FormControl<String>(value: r.key),
+            'value': FormControl<String>(value: r.value),
+          }),
+        );
+      }
+    });
   }
 
+  // ====== DELETE API ======
   void _deleteApi(int index) {
-    setState(() {
-      createdApis.removeAt(index);
-    });
+    context.read<ApiBloc>().add(DeleteApi(index));
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('API Builder'), elevation: 2),
-      body: LayoutBuilder(
-        builder: (BuildContext context, BoxConstraints constraints) {
-          final panelWidth = constraints.maxWidth / 3;
+    return BlocBuilder<ApiBloc, ApiState>(
+      builder: (context, state) {
+        final filteredApis =
+            state.apis
+                .where(
+                  (api) =>
+                      api.apiName.toLowerCase().contains(searchQuery) ||
+                      api.apiEndpoint.toLowerCase().contains(searchQuery),
+                )
+                .toList();
 
-          return Padding(
-            padding: const EdgeInsets.only(top: 8, left: 4, right: 8),
-            child: Stack(
-              children: [
-                // LEFT PANEL
-                Positioned(
-                  width: panelWidth - 50,
-                  height: constraints.maxHeight,
-                  left: 0,
-                  child: _buildLeftPanel(),
-                ),
+        return Scaffold(
+          appBar: AppBar(title: const Text('API Builder'), elevation: 2),
+          body: LayoutBuilder(
+            builder: (BuildContext context, BoxConstraints constraints) {
+              final panelWidth = constraints.maxWidth / 3;
 
-                // CENTER PANEL
-                Positioned(
-                  width: panelWidth + 100,
-                  height: constraints.maxHeight,
-                  left: panelWidth - 50,
-                  child: _buildCenterPanel(),
-                ),
+              return Padding(
+                padding: const EdgeInsets.only(top: 8, left: 4, right: 8),
+                child: Stack(
+                  children: [
+                    // LEFT PANEL
+                    Positioned(
+                      width: panelWidth - 50,
+                      height: constraints.maxHeight,
+                      left: 0,
+                      child: _buildLeftPanel(filteredApis),
+                    ),
 
-                // RIGHT PANEL (NEW)
-                Positioned(
-                  width: panelWidth,
-                  height: constraints.maxHeight,
-                  left: (panelWidth * 2) + 50,
-                  child: _buildRightPanel(),
+                    // CENTER PANEL
+                    Positioned(
+                      width: panelWidth + 100,
+                      height: constraints.maxHeight,
+                      left: panelWidth - 50,
+                      child: _buildCenterPanel(),
+                    ),
+
+                    // RIGHT PANEL
+                    Positioned(
+                      width: panelWidth,
+                      height: constraints.maxHeight,
+                      left: (panelWidth * 2) + 50,
+                      child: _buildRightPanel(),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          );
-        },
-      ),
+              );
+            },
+          ),
+        );
+      },
     );
   }
 
   // ====== LEFT PANEL ======
-  Widget _buildLeftPanel() {
+  Widget _buildLeftPanel(List<ApiModel> filteredApis) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -167,48 +212,27 @@ class _SplitPanelState extends State<SplitPanel> {
         ),
         Expanded(
           child: ListView.builder(
-            itemCount: createdApis
-                .where((api) =>
-                    api['apiName']
-                        .toString()
-                        .toLowerCase()
-                        .contains(searchQuery) ||
-                    api['apiEndpoint']
-                        .toString()
-                        .toLowerCase()
-                        .contains(searchQuery))
-                .length,
+            itemCount: filteredApis.length,
             itemBuilder: (context, index) {
-              final filteredApis = createdApis
-                  .where((api) =>
-                      api['apiName']
-                          .toString()
-                          .toLowerCase()
-                          .contains(searchQuery) ||
-                      api['apiEndpoint']
-                          .toString()
-                          .toLowerCase()
-                          .contains(searchQuery))
-                  .toList();
-
               final api = filteredApis[index];
+              final stateApis = context.read<ApiBloc>().state.apis;
 
               return Card(
                 elevation: 4,
                 margin: const EdgeInsets.all(8),
                 child: ListTile(
-                  title: Text(api['apiName']),
-                  subtitle: Text(api['apiEndpoint']),
+                  title: Text(api.apiName),
+                  subtitle: Text(api.apiEndpoint),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       IconButton(
                         icon: const Icon(Icons.edit, color: Colors.blue),
-                        onPressed: () => _editApi(createdApis.indexOf(api)),
+                        onPressed: () => _editApi(stateApis.indexOf(api)),
                       ),
                       IconButton(
                         icon: const Icon(Icons.delete, color: Colors.red),
-                        onPressed: () => _deleteApi(createdApis.indexOf(api)),
+                        onPressed: () => _deleteApi(stateApis.indexOf(api)),
                       ),
                     ],
                   ),
@@ -241,8 +265,10 @@ class _SplitPanelState extends State<SplitPanel> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blue,
                     ),
-                    child: const Text("Test API",
-                        style: TextStyle(color: Colors.white)),
+                    child: const Text(
+                      "Test API",
+                      style: TextStyle(color: Colors.white),
+                    ),
                   ),
                   const SizedBox(width: 8),
                   ElevatedButton(
@@ -250,8 +276,10 @@ class _SplitPanelState extends State<SplitPanel> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.red,
                     ),
-                    child: const Text("SAVE",
-                        style: TextStyle(color: Colors.white)),
+                    child: const Text(
+                      "SAVE",
+                      style: TextStyle(color: Colors.white),
+                    ),
                   ),
                 ],
               ),
@@ -262,7 +290,7 @@ class _SplitPanelState extends State<SplitPanel> {
     );
   }
 
-  // ====== RIGHT PANEL (JSON STRUCTURED VIEW) ======
+  // ====== RIGHT PANEL ======
   Widget _buildRightPanel() {
     final headersArray = form.control('headers') as FormArray;
     final requestArray = form.control('requestKey') as FormArray;
@@ -270,7 +298,7 @@ class _SplitPanelState extends State<SplitPanel> {
     Map<String, String> headersObject = {
       for (var h in headersArray.controls)
         if ((h as FormGroup).control('key').value != null &&
-            (h).control('value').value != null)
+            h.control('value').value != null)
           h.control('key').value: h.control('value').value,
     };
 
@@ -287,13 +315,15 @@ class _SplitPanelState extends State<SplitPanel> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text("Structured View",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const Text(
+              "Structured View",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 12),
-
-            Text("Headers Object:",
-                style:
-                    TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)),
+            Text(
+              "Headers Object:",
+              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue),
+            ),
             Container(
               width: double.infinity,
               margin: const EdgeInsets.only(top: 6, bottom: 12),
@@ -304,10 +334,13 @@ class _SplitPanelState extends State<SplitPanel> {
                 style: const TextStyle(fontFamily: 'monospace'),
               ),
             ),
-
-            Text("Request Object:",
-                style:
-                    TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
+            Text(
+              "Request Object:",
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.green,
+              ),
+            ),
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(8),
@@ -397,14 +430,17 @@ class _SplitPanelState extends State<SplitPanel> {
                 ElevatedButton.icon(
                   onPressed: () {
                     if (headerEntryForm.valid) {
-                      final headersArray =
-                          form.control('headers') as FormArray;
-                      headersArray.add(FormGroup({
-                        'key': FormControl<String>(
-                            value: headerEntryForm.control('key').value),
-                        'value': FormControl<String>(
-                            value: headerEntryForm.control('value').value),
-                      }));
+                      final headersArray = form.control('headers') as FormArray;
+                      headersArray.add(
+                        FormGroup({
+                          'key': FormControl<String>(
+                            value: headerEntryForm.control('key').value,
+                          ),
+                          'value': FormControl<String>(
+                            value: headerEntryForm.control('value').value,
+                          ),
+                        }),
+                      );
                       headerEntryForm.reset();
                       setState(() {});
                     } else {
@@ -445,11 +481,14 @@ class _SplitPanelState extends State<SplitPanel> {
                     if (requestEntryForm.valid) {
                       final requestArray =
                           form.control('requestKey') as FormArray;
-                      requestArray.add(FormGroup({
-                        'key': FormControl<String>(
-                            value: requestEntryForm.control('key').value),
-                        'value': FormControl<String>(value: ""),
-                      }));
+                      requestArray.add(
+                        FormGroup({
+                          'key': FormControl<String>(
+                            value: requestEntryForm.control('key').value,
+                          ),
+                          'value': FormControl<String>(value: ""),
+                        }),
+                      );
                       requestEntryForm.reset();
                       setState(() {});
                     } else {
