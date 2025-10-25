@@ -16,6 +16,7 @@ import 'package:dashboard/bloc/bpwidgets/bpwidget_bloc.dart';
 import 'package:dashboard/bloc/bpwidgets/model/bpwidget.dart';
 import 'package:dashboard/bloc/bpwidgets/model/bpwidget_schema.dart';
 import 'package:dashboard/bloc/bpwidgets/page_container.dart';
+import 'package:dashboard/pages/canva_nav_rail.dart';
 import 'package:dashboard/pages/dynamic_form_builder.dart';
 import 'package:dashboard/types/drag_drop_types.dart';
 import 'package:dashboard/utils/math_utils.dart';
@@ -214,7 +215,7 @@ class _SplitPanelState extends State<SplitPanel> {
             iconTheme: GlobalColors.iconThemeWhite,
             titleTextStyle: GlobalColors.titleTextStyleWhite,
             actionsIconTheme: GlobalColors.iconThemeWhite,
-            title: Text('BuildPerfect'),
+            title: Text('BuildPerfect',style: TextStyle(fontSize: 25),),
             flexibleSpace: Container(
               decoration: BoxDecoration(gradient: GlobalColors.appBarBGColor),
             ),
@@ -258,7 +259,8 @@ class _SplitPanelState extends State<SplitPanel> {
                   constraints.maxWidth - (widget.itemSpacing * gutter);
               final columnWidth = spaceForColumns / widget.columns;
               final itemSize = Size(columnWidth, columnWidth);
-              final leftPanelWidth = constraints.maxWidth / 4;
+              final double navrailWidth = 100;
+              final leftPanelWidth = constraints.maxWidth / 5;
               final centerPanelWidth = constraints.maxWidth / 2;
               final rightPanelWidth =
                   constraints.maxWidth -
