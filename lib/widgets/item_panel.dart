@@ -409,6 +409,7 @@ class _ItemsPanelState extends State<ItemPanel> {
     } else {
       return Expanded(
             child: Card(
+              elevation: 3,
               color: Colors.white,
               child: Column(
                 children: [

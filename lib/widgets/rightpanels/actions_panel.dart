@@ -92,6 +92,7 @@ class _ActionsPanelState extends State<ActionsPanel> {
             children: [
               Positioned(
                 child: Card(
+                  elevation: 3,
                   color: Colors.white,
                   child: SizedBox(
                     width: widget.width,

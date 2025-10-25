@@ -1,3 +1,4 @@
+import 'package:dashboard/appstyles/global_colors.dart';
 import 'package:dashboard/pages/split_screen.dart';
 import 'package:dashboard/widgets/custom_navigation_rail.dart';
 import 'package:dashboard/widgets/my_Projects.dart';
@@ -59,20 +60,26 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
-        bottom: PreferredSize(
-          preferredSize: Size.fromHeight(20),
-          child: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Container(color: Colors.grey, height: 1),
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: GlobalColors.appBarBGColor,
           ),
         ),
+        // bottom: PreferredSize(
+        //   preferredSize: Size.fromHeight(20),
+        //   child: Padding(
+        //     padding: const EdgeInsets.all(8.0),
+        //     child: Container(color: Colors.grey, height: 1),
+        //   ),
+        // ),
         title: Row(
           mainAxisSize: MainAxisSize.min, // Shrink wrap the Row horizontally
           mainAxisAlignment: MainAxisAlignment.center,
+        
           children: [
-            Icon(Icons.account_tree),
+            Icon(Icons.account_tree,color: GlobalColors.iconColorWhite,),
             SizedBox(width: 10),
-            Text("BUILD IT", style: TextStyle(fontWeight: FontWeight.bold)),
+            Text("BUILD IT", style: GlobalColors.titleTextStyleWhite),
             SizedBox(width: 10),
             SearchBarWidget(hintText: "Search here"),
             SizedBox(
@@ -84,7 +91,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     MaterialPageRoute(builder: (context) => SplitScreen()),
                   );
                 },
-                child: Text("Create New Project"),
+                child: Text("Create New Project" ,style: GlobalColors.titleTextStyleWhite),
                 style: ButtonStyle(
                   foregroundColor: WidgetStateProperty.all(Colors.black),
                   backgroundColor: WidgetStateProperty.all(Colors.transparent),
@@ -103,41 +110,36 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       body: Row(
         children: [
-          Padding(
-            padding: const EdgeInsets.all(10),
-            child: Container(
-              width: 200,
-              decoration: BoxDecoration(
-                border: Border(right: BorderSide(color: Colors.grey, width: 1)),
-               
-              ),
-              child: CustomNavigationRail(
-                selectedIndex: navSelectedIndex,
-                isExtend: true,
-                label: [
-                  "My Project",
-                  "Templates",
-                  "Data Source",
-                  "Integrations",
-                ],
-                icons: [Icons.home, Icons.file_copy, Icons.more, Icons.abc],
-                // backgroundColor: Colors.pink.shade100,
-                onDestinationSelected: (value) {
-                  setState(() {
-                    navSelectedIndex = value;
-                  });
-                },
-              ),
+          Container(
+            // width: 200,
+            child: CustomNavigationRail(
+              selectedIconTheme: GlobalColors.navSelectIcomeThem,
+              indicatorColor:GlobalColors.navIndicatorColor,
+              selectedIndex: navSelectedIndex,
+              isExtend: false,
+              label: [
+                "My Project",
+                "Templates",
+                "Data Source",
+                "Integrations",
+              ],
+              icons: [Icons.home, Icons.file_copy, Icons.more, Icons.abc],
+              // backgroundColor: Colors.pink.shade100,
+              onDestinationSelected: (value) {
+                setState(() {
+                  navSelectedIndex = value;
+                });
+              },
             ),
           ),
           Padding(
             padding: const EdgeInsets.all(10),
             child: Container(
               width: 400,
-                decoration: BoxDecoration(
-                border: Border(right: BorderSide(color: Colors.grey, width: 1)),
+              //   decoration: BoxDecoration(
+              //   border: Border(right: BorderSide(color: Colors.grey, width: 1)),
                
-              ),
+              // ),
               child: getContentWidget(navSelectedIndex),
             ),
           ),

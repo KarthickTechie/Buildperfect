@@ -7,6 +7,8 @@ class CustomNavigationRail extends StatelessWidget {
   final bool isExtend;
   final Function(int) onDestinationSelected;
   final Color? backgroundColor;
+  final IconThemeData? selectedIconTheme;
+  final Color? indicatorColor;
 
   const CustomNavigationRail({
     super.key,
@@ -16,10 +18,13 @@ class CustomNavigationRail extends StatelessWidget {
     required this.isExtend,
     required this.onDestinationSelected,
     this.backgroundColor,
+    this.selectedIconTheme,
+    this.indicatorColor,
     });
   @override
   Widget build(BuildContext context) {
     return NavigationRail(
+      elevation: 6,
       destinations:List.generate(label!.length, (index){
         return NavigationRailDestination(icon: Icon(icons![index]), label: Text(label![index]),padding: EdgeInsets.all(5));
       }),
@@ -28,7 +33,15 @@ class CustomNavigationRail extends StatelessWidget {
       extended: isExtend,
       onDestinationSelected: onDestinationSelected,
       backgroundColor: backgroundColor,
-      selectedIconTheme: IconThemeData(size: 15),
+      selectedIconTheme: selectedIconTheme,
+      indicatorColor: indicatorColor,
+
+  // 🟢 Custom shape for the selected indicator
+  indicatorShape: RoundedRectangleBorder(
+    borderRadius: BorderRadius.circular(6),
+    side: const BorderSide(color: Colors.white),
+   
+  )
     );
   }
 }
