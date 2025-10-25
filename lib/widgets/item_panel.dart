@@ -408,6 +408,7 @@ class _ItemsPanelState extends State<ItemPanel> {
         children: [
           Expanded(
             child: Card(
+              elevation: 3,
               color: Colors.white,
               child: Column(
                 children: [

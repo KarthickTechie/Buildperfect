@@ -24,6 +24,7 @@ class _PageContainerState extends State<PageContainer> {
   Widget build(BuildContext context) {
     return Expanded(
       child: Card(
+        elevation: 3,
         color: Colors.white,
         child: Column(
           children: [

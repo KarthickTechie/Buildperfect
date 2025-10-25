@@ -211,7 +211,14 @@ class _SplitPanelState extends State<SplitPanel> {
 
         return Scaffold(
           appBar: AppBar(
-            title: Text('BuildPerfect'),
+            // toolbarTextStyle: TextStyle(color: Colors.white,fontWeight:FontWeight.w600),
+            iconTheme: GlobalColors.iconThemeWhite,
+            titleTextStyle: GlobalColors.titleTextStyleWhite,
+            actionsIconTheme: GlobalColors.iconThemeWhite,
+            title: Text('BuildPerfect',style: TextStyle(fontSize: 25),),
+            flexibleSpace: Container(
+              decoration: BoxDecoration(gradient: GlobalColors.appBarBGColor),
+            ),
             elevation: 2,
             actions: [
               IconButton(
@@ -260,129 +267,133 @@ class _SplitPanelState extends State<SplitPanel> {
                   (leftPanelWidth + centerPanelWidth) +
                   80;
               final leftPanelheight = constraints.maxHeight / 2;
-              return Padding(
-                padding: const EdgeInsets.only(top: 8, left: 8, right: 8),
-                child: Stack(
-                  children: [
-                    Positioned(
-                      width: navrailWidth,
-                      left: 0,
-                      height: constraints.maxHeight,
-                      child: CanvaNavigationRailExample(),
-                      // child: CustomNavigationRail(
-                      //   selectedIndex: navSelectedIndex,
-                      //   isExtend: false,
-                      //   label: ["Home", "Pages", "More"],
-                      //   icons: [Icons.home, Icons.file_copy, Icons.more],
-                      //   backgroundColor: Colors.pink.shade100,
-                      //   onDestinationSelected: (value) {
-                      //     setState(() {
-                      //       navSelectedIndex = value;
-                      //       if (navSelectedIndex == 0) {
-                      //         Navigator.pop(context);
-                      //       }
-                      //     });
-                      //   },
-                      // ),
+              return Stack(
+                children: [
+                  Positioned(
+                    width: 50,
+                    left: 0,
+                    height: constraints.maxHeight,
+                    child: CustomNavigationRail(
+                      selectedIconTheme: GlobalColors.navSelectIcomeThem,
+                      indicatorColor: GlobalColors.navIndicatorColor,
+                      selectedIndex: navSelectedIndex,
+                      isExtend: false,
+                      label: ["Home", "Pages", "More"],
+                      icons: [Icons.home, Icons.file_copy, Icons.more],
+                      backgroundColor: GlobalColors.navBGColor,
+                      onDestinationSelected: (value) {
+                        setState(() {
+                          navSelectedIndex = value;
+                          if (navSelectedIndex == 0) {
+                            Navigator.pop(context);
+                          }
+                        });
+                      },
                     ),
-                    Positioned(
-                      // for draggable component
-                      width: leftPanelWidth - 15,
-                      height: leftPanelheight - 2,
-                      left: navrailWidth - 30,
-                      top: 0,
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(color: Color(0xFFF0F1F5)),
-
-                        child: MyDropRegion(
-                          onDrop: drop,
-                          updateDropPreview: updateDropPreview,
-                          childSize: itemSize,
-                          columns: widget.columns,
-                          panel: Panel.lower,
-
-                          child: ItemPanel(
-                            width: leftPanelWidth - 20,
-                            crossAxisCount: widget.columns,
-                            spacing: widget.itemSpacing,
-                            items: lower,
-                            onDragStart: onItemDragStart,
-                            panel: Panel.lower,
-                            dragStart: dragStart,
-                            dropPreview: dropPreview,
-                            hoveringData: hoveringData,
-                          ),
-                        ),
+                  ),
+                  Positioned(
+                    // for draggable component
+                    width: leftPanelWidth,
+                    height: leftPanelheight - 5,
+                    left: 50,
+                    top: 0,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: GlobalColors.leftPanelBGColor,
                       ),
-                    ),
 
-                    Positioned(
-                      width: leftPanelWidth - 20,
-                      height: leftPanelheight - 2,
-                      left: navrailWidth - 30,
-                      bottom: 0,
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(color: Color(0xFFF0F1F5)),
-                        child: PageContainer(
+                      child: MyDropRegion(
+                        onDrop: drop,
+                        updateDropPreview: updateDropPreview,
+                        childSize: itemSize,
+                        columns: widget.columns,
+                        panel: Panel.lower,
+
+                        child: ItemPanel(
                           width: leftPanelWidth - 100,
-                          bpPageController: bpController,
+                          crossAxisCount: widget.columns,
+                          spacing: widget.itemSpacing,
+                          items: lower,
+                          onDragStart: onItemDragStart,
+                          panel: Panel.lower,
+                          dragStart: dragStart,
+                          dropPreview: dropPreview,
+                          hoveringData: hoveringData,
                         ),
                       ),
                     ),
-                    // Positioned(
-                    //   width: 2,
-                    //   height: constraints.maxHeight,
-                    //   left: leftPanelWidth,
-                    //   child: ColoredBox(color: GlobalColors.centerPanelBGColor),
-                    // ),
-                    Positioned(
-                      // centerpanel for dragtarget
-                      width: centerPanelWidth,
-                      height: constraints.maxHeight,
-                      left: leftPanelWidth + 50,
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          color: GlobalColors.centerPanelBGColor,
-                        ),
-                        child: MyDropRegion(
-                          onDrop: drop,
-                          updateDropPreview: updateDropPreview,
-                          childSize: itemSize,
-                          columns: widget.columns,
-                          panel: Panel.upper,
-                          child: ItemPanel(
-                            width: leftPanelWidth - 100,
-                            crossAxisCount: widget.columns,
-                            spacing: widget.itemSpacing,
-                            items: upper,
-                            onDragStart: onItemDragStart,
-                            panel: Panel.upper,
-                            dragStart: dragStart,
-                            dropPreview: dropPreview,
-                            hoveringData: hoveringData,
-                            onItemClicked: onItemClickRef,
-                          ),
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      width: rightPanelWidth,
-                      height: constraints.maxHeight,
-                      right: 0,
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(color: Color(0xFFF0F1F5)),
+                  ),
 
-                        /// RightPanel - is parent model for props , action and
-                        /// datasource panel
-                        child: RightPanel(
-                          width: rightPanelWidth,
-                          height: constraints.maxHeight,
-                          props: selectedWidgetProps,
+                  Positioned(
+                    width: leftPanelWidth,
+                    height: leftPanelheight - 5,
+                    left: 50,
+                    bottom: 0,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: GlobalColors.leftPanelBGColor,
+                      ),
+                      child: PageContainer(
+                        width: leftPanelWidth - 100,
+                        bpPageController: bpController,
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    width: 2,
+                    height: constraints.maxHeight,
+                    left: leftPanelWidth + 50,
+                    child: ColoredBox(color: GlobalColors.centerPanelBGColor),
+                  ),
+                  Positioned(
+                    // centerpanel for dragtarget
+                    width: centerPanelWidth,
+                    height: constraints.maxHeight,
+                    left: leftPanelWidth + 50,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: GlobalColors.centerPanelBGColor,
+                      ),
+                      child: MyDropRegion(
+                        onDrop: drop,
+                        updateDropPreview: updateDropPreview,
+                        childSize: itemSize,
+                        columns: widget.columns,
+                        panel: Panel.upper,
+                        child: ItemPanel(
+                          width: leftPanelWidth - 100,
+                          crossAxisCount: widget.columns,
+                          spacing: widget.itemSpacing,
+                          items: upper,
+                          onDragStart: onItemDragStart,
+                          panel: Panel.upper,
+                          dragStart: dragStart,
+                          dropPreview: dropPreview,
+                          hoveringData: hoveringData,
+                          onItemClicked: onItemClickRef,
                         ),
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                  Positioned(
+                    width: rightPanelWidth,
+                    height: constraints.maxHeight,
+                    right: 0,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: GlobalColors.leftPanelBGColor,
+                      ),
+
+                      /// RightPanel - is parent model for props , action and
+                      /// datasource panel
+                      child: RightPanel(
+                        width: rightPanelWidth,
+                        height: constraints.maxHeight,
+                        props: selectedWidgetProps,
+                      ),
+                    ),
+                  ),
+                ],
               );
             },
           ),
