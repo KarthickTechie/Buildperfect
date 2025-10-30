@@ -4,9 +4,10 @@ import 'package:dashboard/bloc/apiBuilder/apibuilder_props_bloc.dart';
 import 'package:dashboard/bloc/apiBuilder/apibuilder_props_event.dart';
 import 'package:dashboard/bloc/apiBuilder/apibuilder_props_state.dart';
 import 'package:dashboard/bloc/apiBuilder/model/apibuilder_props.dart';
-import 'package:dashboard/pages/home_screen.dart';
+import 'package:dashboard/core/api/api_client.dart';
 import 'package:dashboard/widgets/customcontrols/key_value_reactive_dropdown.dart';
 import 'package:dashboard/widgets/customcontrols/key_value_reactive_textbox.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_forms/reactive_forms.dart';
@@ -21,7 +22,6 @@ class MyWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-       debugShowCheckedModeBanner: false,
       home: BlocProvider(create: (_) => ApiBloc(), child: const SplitPanel()),
     );
   }
@@ -37,25 +37,26 @@ class SplitPanel extends StatefulWidget {
 }
 
 class _SplitPanelState extends State<SplitPanel> {
-  String _apiResponse = '';
   bool _isLoading = false;
+  RequestObject requestObject = RequestObject({});
+  dynamic responseObject = "";
   final form = FormGroup({
-    'apiName': FormControl<String>(),
-    'apiEndpoint': FormControl<String>(),
+    'apiName': FormControl<String>(validators: [Validators.required]),
+    'apiEndpoint': FormControl<String>(validators: [Validators.required]),
     'apiMethodName': FormControl<String>(),
-    'httpMethod': FormControl<String>(),
+    'httpMethod': FormControl<String>(validators: [Validators.required]),
     'headers': FormArray([]),
     'requestKey': FormArray([]),
     'responses': FormArray([]),
   });
 
   final headerEntryForm = FormGroup({
-    'key': FormControl<String>(),
-    'value': FormControl<String>(),
+    'key': FormControl<String>(validators: [Validators.required]),
+    'value': FormControl<String>(validators: [Validators.required]),
   });
 
   final requestEntryForm = FormGroup({
-    'key': FormControl<String>(),
+    'key': FormControl<String>(validators: [Validators.required]),
     'value': FormControl<String>(),
   });
 
@@ -69,67 +70,53 @@ class _SplitPanelState extends State<SplitPanel> {
 
   // ====== SAVE API ======
   void _saveApi() async {
-    if (form.valid) {
-      final headersArray = form.control('headers') as FormArray;
-      final requestArray = form.control('requestKey') as FormArray;
-      final responseArray = form.control('responses') as FormArray;
+    try {
+      if (form.valid) {
+        final headersArray = form.control('headers') as FormArray;
+        print('***********************>$responseObject');
+        final api = ApiModel(
+          apiName: form.control('apiName').value,
+          apiEndpoint: form.control('apiEndpoint').value,
+          apiMethodName: form.control('apiMethodName').value ?? '',
+          httpMethod: form.control('httpMethod').value,
+          headers:
+              headersArray.controls
+                  .map(
+                    (c) => Header(
+                      key: c.value['key'] ?? '',
+                      value: c.value['value'] ?? '',
+                    ),
+                  )
+                  .toList(),
+          requestKeys: requestObject,
+          responses: ApiResponse.fromJson(responseObject),
+        );
 
-      final api = ApiModel(
-        apiName: form.control('apiName').value,
-        apiEndpoint: form.control('apiEndpoint').value,
-        apiMethodName: form.control('apiMethodName').value ?? '',
-        httpMethod: form.control('httpMethod').value,
-        headers:
-            headersArray.controls
-                .map(
-                  (c) => Header(
-                    key: c.value['key'] ?? '',
-                    value: c.value['value'] ?? '',
-                  ),
-                )
-                .toList(),
-        requestKeys:
-            requestArray.controls
-                .map(
-                  (c) => RequestKey(
-                    key: c.value['key'] ?? '',
-                    value: c.value['value'] ?? '',
-                  ),
-                )
-                .toList(),
-        responses:
-            responseArray
-                .controls // 👈 Added
-                .map(
-                  (c) => ResponseKey(
-                    key: c.value['key'] ?? '',
-                    value: c.value['value'] ?? '',
-                  ),
-                )
-                .toList(),
-      );
+        context.read<ApiBloc>().add(AddApi(api));
 
-      context.read<ApiBloc>().add(AddApi(api));
-      _apiResponse = "";
+        /* ************** SAVE to shared preference *****************************/
+        final prefs = await SharedPreferences.getInstance();
+        final currentList = prefs.getStringList('saved_apis') ?? [];
+        currentList.add(jsonEncode(api.toJson()));
+        await prefs.setStringList('saved_apis', currentList);
 
-      /* ************** SAVE to shared preference ****************************8 */
-      final prefs = await SharedPreferences.getInstance();
-      final currentList = prefs.getStringList('saved_apis') ?? [];
-      currentList.add(jsonEncode(api.toJson()));
-      await prefs.setStringList('saved_apis', currentList);
+        print("API saved:-----------------> ${api.toJson()}");
 
-      print("API saved:-----------------> ${api.toJson()}");
+        /*  ************************************  */
 
-      /*  ************************************  */
-
-      form.reset();
-      (form.control('headers') as FormArray).clear();
-      (form.control('requestKey') as FormArray).clear();
-      (form.control('responses') as FormArray).clear();
-      headerEntryForm.reset();
-      requestEntryForm.reset();
-    } else {
-      form.markAllAsTouched();
+        form.reset();
+        (form.control('headers') as FormArray).clear();
+        (form.control('requestKey') as FormArray).clear();
+        (form.control('responses') as FormArray).clear();
+        headerEntryForm.reset();
+        requestEntryForm.reset();
+        responseObject= '';
+        requestObject = RequestObject({});
+      } else {
+        form.markAllAsTouched();
+      }
+    } catch (error) {
+      print(error);
     }
   }
 
@@ -163,7 +150,6 @@ class _SplitPanelState extends State<SplitPanel> {
     });
 
     final headersArray = form.control('headers') as FormArray;
-    final requestArray = form.control('requestKey') as FormArray;
     final responseArray = form.control('responses') as FormArray;
     setState(() {
       headersArray.clear();
@@ -175,27 +161,8 @@ class _SplitPanelState extends State<SplitPanel> {
           }),
         );
       }
-
-      requestArray.clear();
-      for (var r in api.requestKeys) {
-        requestArray.add(
-          FormGroup({
-            'key': FormControl<String>(value: r.key),
-            'value': FormControl<String>(value: r.value),
-          }),
-        );
-      }
-
-      responseArray.clear();
-      for (var r in api.responses) {
-        responseArray.add(
-          FormGroup({
-            'key': FormControl<String>(value: r.key),
-            'value': FormControl<String>(value: r.value),
-          }),
-        );
-      }
-      _apiResponse = api.responses.toString();
+      requestObject = api.requestKeys;
+      responseObject = api.responses;
       print('responseArray----------->${responseArray}');
     });
   }
@@ -208,7 +175,6 @@ class _SplitPanelState extends State<SplitPanel> {
   String _formatDynamicJson(String rawResponse) {
     try {
       final decoded = jsonDecode(rawResponse);
-
       if (decoded is List || decoded is Map) {
         // Pretty print with indentation
         const encoder = JsonEncoder.withIndent('  ');
@@ -218,7 +184,6 @@ class _SplitPanelState extends State<SplitPanel> {
         return decoded.toString();
       }
     } catch (e) {
-      // If invalid JSON, return as-is
       return rawResponse;
     }
   }
@@ -233,7 +198,6 @@ class _SplitPanelState extends State<SplitPanel> {
     final url = form.control('apiEndpoint').value;
     final method = form.control('httpMethod').value;
     final headersArray = form.control('headers') as FormArray;
-    final requestArray = form.control('requestKey') as FormArray;
     print('method------------->$method');
 
     // Prepare headers
@@ -245,87 +209,74 @@ class _SplitPanelState extends State<SplitPanel> {
     };
 
     // Prepare body (request keys)
-    Map<String, dynamic> body = {
-      for (var r in requestArray.controls)
-        if ((r as FormGroup).control('key').value != null)
-          r.control('key').value: r.control('value').value ?? "",
-    };
+    dynamic body = requestObject;
 
     try {
-      http.Response response;
-
+      // http.Response response;
+      Response response;
+      Dio dio = ApiClient().getDio();
       if (method == 'GET' || method == 'get') {
         // Add query params for GET
         // final uri = Uri.parse(url).replace(queryParameters: body);
         final uri = Uri.parse(url);
-        response = await http.get(uri, headers: headers);
-      } else {
-        response = await http.post(
-          Uri.parse(url),
-          headers: headers,
-          body: jsonEncode(body),
+        // response = await http.get(uri, headers: headers);
+        response = await dio.get(
+          url,
+          data: jsonEncode(body),
+          options: Options(headers: headers),
         );
+        print('GET Dio response $response');
+      } else if (method == 'POST' || method == 'post') {
+        response = await dio.post(
+          url,
+          data: jsonEncode(body),
+          options: Options(headers: headers),
+        );
+        print('POST Dio response $response');
+        // response = await http.post(
+        //   Uri.parse(url),
+        //   headers: headers,
+        //   body: jsonEncode(body),
+        // );
+      } else if (method == 'DELETE' || method == 'delete') {
+        response = await dio.delete(
+          url,
+          data: jsonEncode(body),
+          options: Options(headers: headers),
+        );
+        print('DELETE Dio response $response');
+        // response = await http.post(
+        //   Uri.parse(url),
+        //   headers: headers,
+        //   body: jsonEncode(body),
+        // );
+      } else {
+        response = await dio.put(
+          url,
+          data: jsonEncode(body),
+          options: Options(headers: headers),
+        );
+        print('PUT Dio response $response');
+        // response = await http.post(
+        //   Uri.parse(url),
+        //   headers: headers,
+        //   body: jsonEncode(body),
+        // );
       }
-
-      final formatted = _formatDynamicJson(response.body);
-      String responseText = response.body;
-      final decoded = jsonDecode(response.body);
-      _populateResponseArray(decoded);
+      // print('responseText------------------>${response.body}');
+      // final formatted = _formatDynamicJson(response.body);
+      // String responseText = response.body;
+      // final decoded = jsonDecode(response.body);
+      // _populateResponseArray(decoded);
       setState(() {
-        _apiResponse = formatted;
+        responseObject = response.data;
       });
-      print('responseText------------------>$responseText');
+      print('responseObject------------------>${responseObject}');
     } catch (error) {
       print(error);
     } finally {
       setState(() => _isLoading = false);
     }
-  }
-
-  void _populateResponseArray(dynamic responseJson) {
-    final responseArray = form.control('responses') as FormArray;
-    responseArray.clear();
-    print(
-      '_populateResponseArray------->${responseJson is Map<String, dynamic>}',
-    );
-    print('_populateResponseArray List------->${responseJson is List}');
-    if (responseJson is Map<String, dynamic>) {
-      // ✅ For simple object response
-      responseJson.forEach((key, value) {
-        responseArray.add(
-          FormGroup({
-            'key': FormControl<String>(value: key),
-            'value': FormControl<String>(value: value.toString()),
-          }),
-        );
-      });
-    } else if (responseJson is List) {
-      // ✅ For list of objects
-      for (var item in responseJson) {
-        if (item is Map<String, dynamic>) {
-          item.forEach((key, value) {
-            responseArray.add(
-              FormGroup({
-                'key': FormControl<String>(value: key),
-                'value': FormControl<String>(value: value.toString()),
-              }),
-            );
-          });
-        }
-      }
-    } else {
-      // ✅ For any other data type
-      responseArray.add(
-        FormGroup({
-          'key': FormControl<String>(value: 'response'),
-          'value': FormControl<String>(value: responseJson.toString()),
-        }),
-      );
-    }
-
-    debugPrint(
-      "✅ Response mapped to FormArray (${responseArray.controls.length} items)",
-    );
   }
 
   @override
@@ -342,21 +293,7 @@ class _SplitPanelState extends State<SplitPanel> {
                 .toList();
 
         return Scaffold(
-          appBar: AppBar(
-            elevation: 2,
-            leading: IconButton(
-              icon: const Icon(Icons.arrow_back),
-              onPressed: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const HomeScreen(),
-                  ),
-                );
-              },
-            ),
-            title: const Text('API Builder'),
-          ),
+          appBar: AppBar(title: const Text('API Builder'), elevation: 2),
           body: LayoutBuilder(
             builder: (BuildContext context, BoxConstraints constraints) {
               final panelWidth = constraints.maxWidth / 3;
@@ -470,7 +407,7 @@ class _SplitPanelState extends State<SplitPanel> {
                   ElevatedButton.icon(
                     onPressed: _isLoading ? null : _testApi,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
+                      backgroundColor: Colors.red,
                     ),
                     icon:
                         _isLoading
@@ -493,7 +430,7 @@ class _SplitPanelState extends State<SplitPanel> {
                   ElevatedButton(
                     onPressed: _saveApi,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
+                      backgroundColor: Colors.red,
                     ),
                     child: const Text(
                       "SAVE",
@@ -520,31 +457,6 @@ class _SplitPanelState extends State<SplitPanel> {
             h.control('value').value != null)
           h.control('key').value: h.control('value').value,
     };
-
-    Map<String, String> requestObject = {
-      for (var r in requestArray.controls)
-        if ((r as FormGroup).control('key').value != null)
-          r.control('key').value: r.control('value').value ?? "",
-    };
-
-    // var responseObject = {
-    //   for (var r in responseArray.controls)
-    //     if ((r as FormGroup).control('key').value != null)
-    //       r.control('key').value: r.control('value').value ?? "",
-    // };
-    // List<Map<String, dynamic>> responseList =
-    //     responseArray.controls.map((r) {
-    //       final group = r as FormGroup;
-    //       return {
-    //         'key': group.control('key').value,
-    //         'value': group.control('value').value ?? "",
-    //       };
-    //     }).toList();
-    // final responseObject = jsonEncode(responseList);
-    print(
-      '_buildRightPanel responseArray-------------->${responseArray.controls}',
-    );
-    // print('_buildRightPanel responseObject-------------->$responseObject');
 
     return Container(
       color: Colors.grey.shade100,
@@ -584,7 +496,8 @@ class _SplitPanelState extends State<SplitPanel> {
               padding: const EdgeInsets.all(8),
               color: Colors.white,
               child: Text(
-                _formatAsJson(requestObject),
+                // _formatAsJson(requestObject),
+                JsonEncoder.withIndent('  ').convert(requestObject),
                 style: const TextStyle(fontFamily: 'monospace'),
               ),
             ),
@@ -611,35 +524,15 @@ class _SplitPanelState extends State<SplitPanel> {
                 // 👈 Scrollable container
                 scrollDirection: Axis.vertical,
                 child: SelectableText(
-                  const JsonEncoder.withIndent(
-                    '  ',
-                  ).convert(buildResponseJson(responseArray)),
+                  // responseObject,
+                  JsonEncoder.withIndent('  ').convert(responseObject),
                   // _formatAsJson(responseObject),
                   // buildResponseJson(responseArray),
                   // responseObject,
-                  // _apiResponse,
                   style: const TextStyle(fontFamily: 'monospace', fontSize: 14),
                 ),
               ),
             ),
-            // Text(
-            //   "Response Object:",
-            //   style: TextStyle(
-            //     fontWeight: FontWeight.bold,
-            //     color: Colors.green,
-            //   ),
-            // ),
-            // if (_apiResponse != null) ...[
-            //   Container(
-            //     width: double.infinity,
-            //     padding: const EdgeInsets.all(8),
-            //     color: Colors.white,
-            //     child: Text(
-            //       _apiResponse!,
-            //       style: const TextStyle(fontFamily: 'monospace'),
-            //     ),
-            //   ),
-            // ],
           ],
         ),
       ),
@@ -796,28 +689,26 @@ class _SplitPanelState extends State<SplitPanel> {
                 const SizedBox(width: 20),
                 KeyValueReactiveTextbox(
                   formControlName: 'value',
-                  labeltext: 'Request Key',
+                  labeltext: 'Request Value',
                   width: 260,
                 ),
                 const SizedBox(width: 20),
                 IconButton(
                   onPressed: () {
                     if (requestEntryForm.valid) {
-                      final requestArray =
-                          form.control('requestKey') as FormArray;
-                      requestArray.add(
-                        FormGroup({
-                          'key': FormControl<String>(
-                            value: requestEntryForm.control('key').value,
-                          ),
-                          // 'value': FormControl<String>(value: ""),
-                          'value': FormControl<String>(
-                            value: requestEntryForm.control('value').value,
-                          ),
-                        }),
-                      );
+                      final key = requestEntryForm.control('key').value;
+                      final value = requestEntryForm.control('value').value;
+
+                      setState(() {
+                        requestObject = requestObject.addNestedKey(key, value);
+                        print(
+                          const JsonEncoder.withIndent(
+                            '  ',
+                          ).convert(requestObject),
+                        );
+                      });
+
                       requestEntryForm.reset();
-                      setState(() {});
                     } else {
                       requestEntryForm.markAllAsTouched();
                     }
