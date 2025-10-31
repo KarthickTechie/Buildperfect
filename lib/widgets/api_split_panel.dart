@@ -4,6 +4,7 @@ import 'package:dashboard/bloc/apiBuilder/apibuilder_props_bloc.dart';
 import 'package:dashboard/bloc/apiBuilder/apibuilder_props_event.dart';
 import 'package:dashboard/bloc/apiBuilder/apibuilder_props_state.dart';
 import 'package:dashboard/bloc/apiBuilder/model/apibuilder_props.dart';
+import 'package:dashboard/core/api/api_call.dart';
 import 'package:dashboard/core/api/api_client.dart';
 import 'package:dashboard/widgets/customcontrols/key_value_reactive_dropdown.dart';
 import 'package:dashboard/widgets/customcontrols/key_value_reactive_textbox.dart';
@@ -39,7 +40,8 @@ class SplitPanel extends StatefulWidget {
 class _SplitPanelState extends State<SplitPanel> {
   bool _isLoading = false;
   RequestObject requestObject = RequestObject({});
-  dynamic responseObject = "";
+  dynamic responseObject = '';
+  String selectedHeaderKey = '';
   final form = FormGroup({
     'apiName': FormControl<String>(validators: [Validators.required]),
     'apiEndpoint': FormControl<String>(validators: [Validators.required]),
@@ -53,6 +55,8 @@ class _SplitPanelState extends State<SplitPanel> {
   final headerEntryForm = FormGroup({
     'key': FormControl<String>(validators: [Validators.required]),
     'value': FormControl<String>(validators: [Validators.required]),
+     'otherKey': FormControl<String>(),
+    'otherValue': FormControl<String>(),
   });
 
   final requestEntryForm = FormGroup({
@@ -110,7 +114,7 @@ class _SplitPanelState extends State<SplitPanel> {
         (form.control('responses') as FormArray).clear();
         headerEntryForm.reset();
         requestEntryForm.reset();
-        responseObject= '';
+        responseObject = '';
         requestObject = RequestObject({});
       } else {
         form.markAllAsTouched();
@@ -158,6 +162,8 @@ class _SplitPanelState extends State<SplitPanel> {
           FormGroup({
             'key': FormControl<String>(value: h.key),
             'value': FormControl<String>(value: h.value),
+            'otherKey': FormControl<String>(value: ""),
+            'otherValue': FormControl<String>(value: ""),
           }),
         );
       }
@@ -209,60 +215,67 @@ class _SplitPanelState extends State<SplitPanel> {
     };
 
     // Prepare body (request keys)
-    dynamic body = requestObject;
+    dynamic body = requestObject.toJson();
 
     try {
       // http.Response response;
       Response response;
-      Dio dio = ApiClient().getDio();
-      if (method == 'GET' || method == 'get') {
-        // Add query params for GET
-        // final uri = Uri.parse(url).replace(queryParameters: body);
-        final uri = Uri.parse(url);
-        // response = await http.get(uri, headers: headers);
-        response = await dio.get(
-          url,
-          data: jsonEncode(body),
-          options: Options(headers: headers),
-        );
-        print('GET Dio response $response');
-      } else if (method == 'POST' || method == 'post') {
-        response = await dio.post(
-          url,
-          data: jsonEncode(body),
-          options: Options(headers: headers),
-        );
-        print('POST Dio response $response');
-        // response = await http.post(
-        //   Uri.parse(url),
-        //   headers: headers,
-        //   body: jsonEncode(body),
-        // );
-      } else if (method == 'DELETE' || method == 'delete') {
-        response = await dio.delete(
-          url,
-          data: jsonEncode(body),
-          options: Options(headers: headers),
-        );
-        print('DELETE Dio response $response');
-        // response = await http.post(
-        //   Uri.parse(url),
-        //   headers: headers,
-        //   body: jsonEncode(body),
-        // );
-      } else {
-        response = await dio.put(
-          url,
-          data: jsonEncode(body),
-          options: Options(headers: headers),
-        );
-        print('PUT Dio response $response');
-        // response = await http.post(
-        //   Uri.parse(url),
-        //   headers: headers,
-        //   body: jsonEncode(body),
-        // );
-      }
+      response =
+          await ApiCall(
+            dio: ApiClient().getDio(),
+            url: url,
+            method: method,
+            headers: headers,
+            request: body,
+          ).callApi();
+      // if (method == 'GET' || method == 'get') {
+      //   // Add query params for GET
+      //   // final uri = Uri.parse(url).replace(queryParameters: body);
+      //   final uri = Uri.parse(url);
+      //   // response = await http.get(uri, headers: headers);
+      //   response = await dio.get(
+      //     url,
+      //     data: jsonEncode(body),
+      //     options: Options(headers: headers),
+      //   );
+      //   print('GET Dio response $response');
+      // } else if (method == 'POST' || method == 'post') {
+      //   response = await dio.post(
+      //     url,
+      //     data: jsonEncode(body),
+      //     options: Options(headers: headers),
+      //   );
+      //   print('POST Dio response $response');
+      //   // response = await http.post(
+      //   //   Uri.parse(url),
+      //   //   headers: headers,
+      //   //   body: jsonEncode(body),
+      //   // );
+      // } else if (method == 'DELETE' || method == 'delete') {
+      //   response = await dio.delete(
+      //     url,
+      //     data: jsonEncode(body),
+      //     options: Options(headers: headers),
+      //   );
+      //   print('DELETE Dio response $response');
+      //   // response = await http.post(
+      //   //   Uri.parse(url),
+      //   //   headers: headers,
+      //   //   body: jsonEncode(body),
+      //   // );
+      // } else {
+      //   response = await dio.put(
+      //     url,
+      //     data: jsonEncode(body),
+      //     options: Options(headers: headers),
+      //   );
+      //   print('PUT Dio response $response');
+      //   // response = await http.post(
+      //   //   Uri.parse(url),
+      //   //   headers: headers,
+      //   //   body: jsonEncode(body),
+      //   // );
+      // }
       // print('responseText------------------>${response.body}');
       // final formatted = _formatDynamicJson(response.body);
       // String responseText = response.body;
@@ -390,7 +403,8 @@ class _SplitPanelState extends State<SplitPanel> {
 
   // ====== CENTER PANEL ======
   Widget _buildCenterPanel() {
-    return SingleChildScrollView(
+    return 
+    SingleChildScrollView(
       child: ReactiveForm(
         formGroup: form,
         child: Column(
@@ -449,14 +463,23 @@ class _SplitPanelState extends State<SplitPanel> {
   // ====== RIGHT PANEL ======
   Widget _buildRightPanel() {
     final headersArray = form.control('headers') as FormArray;
-    final requestArray = form.control('requestKey') as FormArray;
-    final responseArray = form.control('responses') as FormArray;
-    Map<String, String> headersObject = {
-      for (var h in headersArray.controls)
-        if ((h as FormGroup).control('key').value != null &&
-            h.control('value').value != null)
-          h.control('key').value: h.control('value').value,
-    };
+    Map<String, String> headersObject = {};
+    for (var h in headersArray.controls) {
+      final group = h as FormGroup;
+      final key = group.control('key').value;
+      final value = group.control('value').value;
+      final otherKey = group.control('otherKey').value;
+      final otherValue = group.control('otherValue').value;
+ 
+      if (key != null && value != null && key.toString().isNotEmpty) {
+        headersObject[key] = value;
+      }
+      if (otherKey != null &&
+          otherValue != null &&
+          otherKey.toString().isNotEmpty) {
+        headersObject[otherKey] = otherValue;
+      }
+    }
 
     return Container(
       color: Colors.grey.shade100,
@@ -624,49 +647,110 @@ class _SplitPanelState extends State<SplitPanel> {
           const SizedBox(height: 8),
           ReactiveForm(
             formGroup: headerEntryForm,
-            child: Row(
+            child: Column(
               children: [
-                KeyValueReactiveTextbox(
-                  formControlName: 'key',
-                  labeltext: 'Header Key',
-                  width: 260,
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    KeyValueReactiveDropdown(
+                      formControlName: 'key',
+                      labeltext: 'Header Key',
+                      width: 260,
+                      dropdownEntries: const [
+                        'authorization',
+                        'content-Type',
+                        'accept',
+                        'other',
+                      ],
+                      onSelected: (selected) {
+                        setState(() {
+                          selectedHeaderKey = selected.value;
+                        });
+                      },
+                    ),
+                    const SizedBox(width: 20),
+                    KeyValueReactiveDropdown(
+                      formControlName: 'value',
+                      labeltext: 'Header Value',
+                      width: 260,
+                      dropdownEntries: getOptions(),
+                    ),
+                    const SizedBox(width: 20),
+                    IconButton(
+                      onPressed: () {
+                        if (headerEntryForm.valid) {
+                          final headersArray =
+                              form.control('headers') as FormArray;
+                          headersArray.add(
+                            FormGroup({
+                              'key': FormControl<String>(
+                                value: headerEntryForm.control('key').value,
+                              ),
+                              'value': FormControl<String>(
+                                value: headerEntryForm.control('value').value,
+                              ),
+                              'otherKey': FormControl<String>(
+                                value:
+                                    headerEntryForm.control('otherKey').value,
+                              ),
+                              'otherValue': FormControl<String>(
+                                value:
+                                    headerEntryForm.control('otherValue').value,
+                              ),
+                            }),
+                          );
+                          headerEntryForm.reset();
+                          setState(() {
+                            selectedHeaderKey = '';
+                          });
+                        } else {
+                          headerEntryForm.markAllAsTouched();
+                        }
+                      },
+                      icon: const Icon(Icons.add),
+                      tooltip: "Add",
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 20),
-                KeyValueReactiveTextbox(
-                  formControlName: 'value',
-                  labeltext: 'Header Value',
-                  width: 260,
-                ),
-                const SizedBox(width: 20),
-                IconButton(
-                  onPressed: () {
-                    if (headerEntryForm.valid) {
-                      final headersArray = form.control('headers') as FormArray;
-                      headersArray.add(
-                        FormGroup({
-                          'key': FormControl<String>(
-                            value: headerEntryForm.control('key').value,
-                          ),
-                          'value': FormControl<String>(
-                            value: headerEntryForm.control('value').value,
-                          ),
-                        }),
-                      );
-                      headerEntryForm.reset();
-                      setState(() {});
-                    } else {
-                      headerEntryForm.markAllAsTouched();
-                    }
-                  },
-                  icon: const Icon(Icons.add),
-                  tooltip: "Add",
-                ),
+                const SizedBox(height: 10),
+                selectedHeaderKey == "other"
+                    ? Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        KeyValueReactiveTextbox(
+                          formControlName: 'otherKey',
+                          labeltext: 'Header Key',
+                          width: 260,
+                        ),
+                        const SizedBox(width: 20),
+                        KeyValueReactiveTextbox(
+                          formControlName: 'otherValue',
+                          labeltext: 'Header Value',
+                          width: 260,
+                        ),
+                        const SizedBox(width: 20),
+                      ],
+                    )
+                    : SizedBox(),
               ],
             ),
           ),
         ],
       ),
     );
+  }
+
+  List<dynamic> getOptions() {
+    switch (selectedHeaderKey.toLowerCase()) {
+      case 'authorization':
+        return ['Bearer Token', 'Basic Auth'];
+      case 'content-type':
+        return ['application/json', 'multipart/form-data', 'text/plain'];
+      case 'accept':
+        return ['application/json', 'text/html'];
+      default:
+        return [];
+    }
   }
 
   Widget _buildRequestKeySection() {

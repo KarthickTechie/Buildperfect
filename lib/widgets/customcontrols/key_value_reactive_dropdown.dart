@@ -72,7 +72,13 @@ class _KeyValueDropdownState extends State<KeyValueReactiveDropdown> {
             formControlName: widget.formControlName,
             // width: widget.width * 0.5,
             // initialSelection: widget.initialSelection,
-            items: dropdownItems,
+            items:
+                List.from(widget.dropdownEntries).asMap().entries.map((e) {
+                  return DropdownMenuItem(
+                    value: e.value.toString().toLowerCase(),
+                    child: Text(e.value, style: TextStyle(fontSize: 12)),
+                  );
+                }).toList(),
 
             // trailingIcon: Transform.translate(
             //   offset: Offset(0, -6),
