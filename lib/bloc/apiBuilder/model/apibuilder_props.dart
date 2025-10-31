@@ -1,24 +1,24 @@
 import 'package:equatable/equatable.dart';
- 
+
 class ApiModel extends Equatable {
   final String apiName;
   final String apiEndpoint;
   final String apiMethodName;
   final String httpMethod;
   final List<Header> headers;
-  final List<RequestKey> requestKeys;
-  final List<ResponseKey> responses;
- 
+  final RequestObject requestKeys;
+  final ApiResponse? responses;
+
   const ApiModel({
     required this.apiName,
     required this.apiEndpoint,
     required this.apiMethodName,
     required this.httpMethod,
     this.headers = const [],
-    this.requestKeys = const [],
-    this.responses = const [],
+    required this.requestKeys,
+    this.responses,
   });
- 
+
   // ======= JSON Deserialization =======
   factory ApiModel.fromJson(Map<String, dynamic> json) {
     return ApiModel(
@@ -26,21 +26,23 @@ class ApiModel extends Equatable {
       apiEndpoint: json['apiEndpoint'] ?? '',
       apiMethodName: json['apiMethodName'] ?? '',
       httpMethod: json['httpMethod'] ?? '',
-      headers: (json['headers'] as List<dynamic>?)
+      headers:
+          (json['headers'] as List<dynamic>?)
               ?.map((e) => Header.fromJson(e))
               .toList() ??
           [],
-      requestKeys: (json['requestKey'] as List<dynamic>?)
-              ?.map((e) => RequestKey.fromJson(e))
-              .toList() ??
-          [],
-      responses: (json['responses'] as List<dynamic>?)
-              ?.map((e) => ResponseKey.fromJson(e))
-              .toList() ??
-          [],
+      requestKeys:
+          json['requestKeys'] != null
+              ? RequestObject.fromJson(
+                Map<String, dynamic>.from(json['requestKeys']),
+              )
+              : const RequestObject({}),
+      responses: json['responses'] != null
+          ? ApiResponse.fromJson(json['responses'])
+          : null,
     );
   }
- 
+
   // ======= JSON Serialization =======
   Map<String, dynamic> toJson() {
     return {
@@ -49,11 +51,11 @@ class ApiModel extends Equatable {
       'apiMethodName': apiMethodName,
       'httpMethod': httpMethod,
       'headers': headers.map((h) => h.toJson()).toList(),
-      'requestKey': requestKeys.map((r) => r.toJson()).toList(),
-      'responses': responses.map((r) => r.toJson()).toList()
+      'requestKeys': requestKeys.toJson(),
+      'responses': responses?.toJson(),
     };
   }
- 
+
   // ======= CopyWith =======
   ApiModel copyWith({
     String? apiName,
@@ -61,8 +63,8 @@ class ApiModel extends Equatable {
     String? apiMethodName,
     String? httpMethod,
     List<Header>? headers,
-    List<RequestKey>? requestKeys,
-    List<ResponseKey>? responses,
+    RequestObject? requestKeys,
+    ApiResponse? responses,
   }) {
     return ApiModel(
       apiName: apiName ?? this.apiName,
@@ -74,68 +76,92 @@ class ApiModel extends Equatable {
       responses: responses ?? this.responses,
     );
   }
- 
+
   @override
-  List<Object?> get props =>
-      [apiName, apiEndpoint, apiMethodName, httpMethod, headers, requestKeys, responses];
+  List<Object?> get props => [
+    apiName,
+    apiEndpoint,
+    apiMethodName,
+    httpMethod,
+    headers,
+    requestKeys,
+    responses,
+  ];
 }
- 
+
 // ======= Header Class =======
 class Header extends Equatable {
   final String key;
   final String value;
- 
+
   const Header({required this.key, required this.value});
- 
+
   factory Header.fromJson(Map<String, dynamic> json) {
-    return Header(
-      key: json['key'] ?? '',
-      value: json['value'] ?? '',
-    );
+    return Header(key: json['key'] ?? '', value: json['value'] ?? '');
   }
- 
+
   Map<String, dynamic> toJson() => {'key': key, 'value': value};
- 
+
   @override
   List<Object?> get props => [key, value];
 }
- 
-// ======= RequestKey Class =======
-class RequestKey extends Equatable {
-  final String key;
-  final String value;
- 
-  const RequestKey({required this.key, required this.value});
- 
-  factory RequestKey.fromJson(Map<String, dynamic> json) {
-    return RequestKey(
-      key: json['key'] ?? '',
-      value: json['value'] ?? '',
-    );
-  }
- 
-  Map<String, dynamic> toJson() => {'key': key, 'value': value};
- 
-  @override
-  List<Object?> get props => [key, value];
-}
- 
+
 // ======= ResponseKey Class =======
-class ResponseKey extends Equatable {
-  final String key;
-  final String value;
- 
-  const ResponseKey({required this.key, required this.value});
- 
-  factory ResponseKey.fromJson(Map<String, dynamic> json) {
-    return ResponseKey(
-      key: json['key'] ?? '',
-      value: json['value'] ?? '',
-    );
+class ApiResponse extends Equatable {
+  final dynamic data;
+
+  const ApiResponse({this.data});
+
+  factory ApiResponse.fromJson(dynamic json) {
+    return ApiResponse(data: json);
   }
- 
-  Map<String, dynamic> toJson() => {'key': key, 'value': value};
- 
+
+  dynamic toJson() => data;
+
   @override
-  List<Object?> get props => [key, value];
+  List<Object?> get props => [data];
+}
+
+
+// ======= RequestObject Class =======
+class RequestObject extends Equatable {
+  final Map<String, dynamic> request;
+
+  const RequestObject(this.request);
+
+  factory RequestObject.fromJson(Map<String, dynamic> json) =>
+      RequestObject(Map<String, dynamic>.from(json));
+
+  Map<String, dynamic> toJson() => request;
+
+  RequestObject addNestedKey(String keys, dynamic value) {
+    final newData = Map<String, dynamic>.from(request);
+    frameNestedReqObject(newData, keys, value);
+    return RequestObject(newData);
+  }
+
+  void frameNestedReqObject(
+    Map<String, dynamic> obj,
+    String keys,
+    dynamic value,
+  ) {
+    final splittedKeys = keys.split(".");
+    Map<String, dynamic> current = obj;
+    for (int i = 0; i < splittedKeys.length; i++) {
+      final key = splittedKeys[i];
+      if (i == splittedKeys.length - 1) {
+        current[key] = value;
+      } else {
+        if (current[key] == null || current[key] is! Map<String, dynamic>) {
+          current[key] = <String, dynamic>{};
+        }
+        current = current[key];
+      }
+    }
+  }
+
+  void clearNestedReqObjectValues() {}
+
+  @override
+  List<Object?> get props => [request];
 }
